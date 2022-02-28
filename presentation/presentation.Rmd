@@ -1,0 +1,463 @@
+---
+title: "Billionaires"
+subtitle: "💸💸💸"
+author: "Roni Asatourian"
+date: "06/08/2021"
+output:
+  xaringan::moon_reader:
+    css: default
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+
+---
+## Intro and Data
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(tidyr)
+library(infer)
+library(broom)
+library(knitr)
+billionaires <- read_csv(here::here("data/billionaires.csv")) %>% 
+  filter(year == 2014)
+
+n_rows = nrow(billionaires)  
+n_cols = ncol(billionaires)
+```
+
++ Our data: Multi-dimensional information of billionaires recorded in 2014
++ No. of Observations: `r n_rows`
++ No. of variables: `r n_cols`
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+billionaires_for_display <-
+  billionaires %>% 
+  select(name, `wealth.worth in billions`, demographics.age,
+         wealth.how.inherited, location.region)
+
+colnames(billionaires_for_display) <-
+  c("Name", "Net Worth (in billions)", "Age", "Inherited", "Region")
+
+billionaires_for_display %>%
+  head(n = 10) %>%
+  knitr::kable()
+
+```
+
+---
+## Codebook (summarized)
+
+Variables we choose to focus on:
+
+| Variable | Type | Description |   
+|:---------|:----:|------------:| 
+|`wealth.worth in billions` | *double* | the billionaire's net worth (in billions of USD) |
+|`demographics.age` | *integer* | age of the billionaire (if applicable) |
+|`wealth.how.inherited` | *factor* | was the wealth inherited and from whom |
+|`location.region`| *factor* | where the billionaire lives |
+
+---
+## Investigation (questions)
+Our primary variable of interest is net worth(`wealth.worth in billions`).  
+
+Other variables we will be using to understand the response variable: 
++ age (`demographics.age`)
++ region (`location.region`)
++ inheritance (`wealth.how.inherited`)
+
+
+This dataset includes observations take in 1996, 2001, and 2014. It makes sense to take values that are most recent, so we will be focusing only on observations from the year __2014__. 
+
+Keep in mind that this is all the data on every billionaire, so it is actually the __population__ of the billionaires, not a sample.
+
+---
+## Preliminary Visuals
+
+```{r fig.width=12, fig.align='center',message=FALSE, echo=FALSE, fig.alt="A horizontal bar graph with the region as the Y-axis and the number of billionaires on the X-axis. The most billionaires are in North America, Europe, and East Asia, while Sub-Saharan Africa. The Middle East/North Africa, South Asia, and Latin America have considerably fewer billionaires."}
+graph1 <- billionaires %>% 
+  ggplot(aes(x = location.region)) +
+  geom_bar(fill = "#2a9df4", color = "#1167b1") +
+  labs(title = "Billionaires by Region",
+       x = "Region", y = "Number of Billionaires") + 
+  coord_flip()
+graph1 + theme(panel.background = element_rect(fill = '#d9f7ff', colour = '#97e4f7')) + theme(
+  plot.title = element_text(color = "#1167b1", size = 15, hjust = 0))
+```
+
+---
+## Preliminary Visuals
+
+```{r fig.width=12, fig.align='center',message=FALSE, echo=FALSE, fig.alt = "A histogram with age on the x-axis and the number of billionaires on the y-axis. It is a fairly normal distribution with the mean at around 60 years of age, with a range of 24 to 98."}
+graph2 <- billionaires %>% 
+  filter(demographics.age > 0) %>%  
+  ggplot(aes(x = demographics.age)) +
+  geom_histogram(binwidth = 10, fill = "#2D82B5", color = "#015C92") +
+  labs(title = "Histogram of Number Of Billionares by Age",
+       x = "Age", y = "Number of Billionaires")
+graph2 + theme(panel.background = element_rect(fill = '#d1efff')) +
+  theme(plot.title = element_text(color = "#015C92", size = 15, hjust = 0))
+```
+
+---
+## Preliminary Visuals
+
+```{r fig.width=12, fig.align='center',message=FALSE, echo=FALSE, fig.alt = "A scatter plot with age on the x-axis and net worth on the y-axis. There are multiple extremely wealthy billionaires for all age groups, but the bulk of billionaires are not worth more than 10 million dollars USD."}
+graph3 <- billionaires %>% 
+  filter(demographics.age > 0) %>%  
+  ggplot(aes(x = demographics.age,
+             y = `wealth.worth in billions`)) +
+  geom_point(fill = "#625AD8", color = "#7339AB") +
+  labs(title = "Scatter Plot of Age Against Net Worth",
+       x = "Age", y = "Net Worth (In Billions)")
+graph3 + theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 15, hjust = 0))
+```
+
+---
+## Preliminary Visuals
+
+```{r fig.width=12, fig.align='center',message=FALSE, echo=FALSE, fig.alt = "A horizontal violin plot with the region on the y axis and age on the x axis. The distributions are mostly normal in each region, with the bulk of billionaires from the ages of 40 to 80 years."}
+graph3 <- billionaires %>%
+  filter(demographics.age > 0) %>%  
+  ggplot(aes(x = location.region,
+             y = demographics.age))  +
+  geom_violin(fill = "#625AD8") +
+  labs(title = "Violin Plot of Billionares' Age by Region",
+       x = "Region", y = "Age") + 
+  coord_flip()
+graph3 + theme(panel.background = element_rect(fill = '#e8e6ff')) +
+  theme(plot.title = element_text(color = "#625AD8", size = 15, hjust = 0)) 
+```
+
+---
+
+## Model 1: Formula 
+
+The first covariate we choose to put into the model is age, as intuitively a person's wealth would have some relation with his or her age.
+
+```{r fig.align='center',message=FALSE, echo=FALSE, fig.width=10, fig.height=7}
+model_age <- lm(`wealth.worth in billions` ~ demographics.age, data = billionaires)
+```
+
+We fit the linear regression model with the following formula:
+$$Net Worth_i=\beta_0+\beta_1Age_i$$
+
+---
+## Model 1: Hypothesis Test
+Model summary:
+
+```{r fig.align='center', message=FALSE, echo=FALSE, fig.width=10, fig.height=7}
+tidy(model_age) %>%
+  knitr::kable(digits = 3)
+```
+
+The small p-value (<0.05) indicates that we have significant evidence that there is a relation between age and net worth.
+
+```{r out.width="70%", fig.align='center', message=FALSE, echo=FALSE, fig.width=10, fig.height=5}
+billionaires_new <-
+  billionaires %>% 
+  filter(demographics.age != 0)
+
+graph5 <- billionaires_new %>% 
+  ggplot(aes(x = demographics.age,
+             y = `wealth.worth in billions`)) +
+  geom_point(fill = "#2D82B5", color = "#015C92") +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Linear Model of Net Worth vs Age",
+       x = "Age (years)", y = "Net Worth (billions)")
+graph5 + theme(panel.background = element_rect(fill = '#d1efff')) +
+  theme(plot.title = element_text(color = "#015C92", size = 20, hjust = 0))
+```
+
+---
+## Model 1: Redisual Analysis
+
+However, the scatter of the residuals shows a downward going tread that significantly deviates from a horizontal line at y = 0. This means that the residuals might be dependent with age.
+
+```{r out.width="80%", fig.align='center',message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+
+residuals <- billionaires_new %>% 
+  modelr::add_residuals(model_age) %>% 
+  filter(resid <= 2) %>% 
+  select(resid, demographics.age, `wealth.worth in billions`)
+
+graph7 <- residuals %>% 
+  ggplot(aes(x = demographics.age, 
+             y = resid)) +
+  geom_point(fill = "#625AD8", color = "#7339AB") +
+  geom_hline(yintercept = 0) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Residual Plot", x = "Age (years)", y = "Residuals")
+graph7 + theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 20, hjust = 0))
+```
+
+Therefore, we consider to transform the data to obtain a better fit.
+---
+## Model 1: Transformed Formula
+
+By transforming Net Worth to **log(Net Worth)**, we take into consideration the fact that the wealthier a person currently is, the easier he or she might be to make more money. The new model is as the following: $$\log(NetWorth_i)=\beta_0+\beta_1Age_i$$
+
+```{r fig.align='center',message=FALSE, echo=FALSE, fig.width=10, fig.height=7}
+billionaires_new <-
+  billionaires %>% 
+  filter(demographics.age > 0) 
+
+billionaires_new <-
+  billionaires_new %>%
+  mutate(log_worth = sqrt(`wealth.worth in billions`))
+
+model_age_log <- lm(log_worth ~ demographics.age, data = billionaires_new)
+
+tidy(model_age_log) %>%
+  knitr::kable(digits = 3)
+```
+
+The new regression model we get still yields a extremely small p-value, implying that the trend is **significant**.
+---
+## Model 1: Plot & Regression Line
+
+```{r out.width="85%",fig.align='center',message=FALSE, echo=FALSE, fig.width=10, fig.height=8}
+graph8 <- billionaires_new %>% 
+  ggplot(aes(x = demographics.age,
+             y = log(`wealth.worth in billions`))) +
+  geom_point(color = "#784ae8") +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Linear Model of log(Net Worth) vs Age",
+       x = "Age (years)", y = "Net Worth (billions)")
+graph8 + theme(panel.background = element_rect(fill = '#e8e6ff')) +
+  theme(plot.title = element_text(color = "#625AD8", size = 20, hjust = 0)) 
+```
+
+---
+## Model 1: Redisual Analysis
+
+Now plotting the residual again:
+
+```{r out.width="80%", fig.align='center',message=FALSE, echo=FALSE, fig.width=10, fig.height=7}
+residuals <- billionaires_new %>% 
+  modelr::add_residuals(model_age_log) 
+
+graph <- residuals %>% 
+  filter(resid <= 5) %>%
+  ggplot(aes(x = demographics.age, 
+             y = resid)) +
+  geom_point(fill = "#2D82B5", color = "#015C92") +
+  geom_hline(yintercept = 0) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Residual Plot After Transformation",
+       x = "Age (years)", y = "Residuals")
+graph + theme(panel.background = element_rect(fill = '#d1efff')) +
+  theme(plot.title = element_text(color = "#015C92", size = 20, hjust = 0))
+```
+
+We can clearly see that the average trend becomes more **horizontal** and **centered at y = 0**, and the residual is no longer dependent on age.
+
+---
+## Model 1: Important Note
+
+However, another noticeable pattern is the shape edge at the bottom of the scatter plot, marked with a red line:
+
+```{r echo=FALSE, fig.align='center', fig.height=5, fig.width=10, message=FALSE, out.width="80%"}
+residuals <- billionaires_new %>% 
+  modelr::add_residuals(model_age_log) 
+
+graph <- residuals %>% 
+  filter(resid <= 5) %>%
+  ggplot(aes(x = demographics.age, 
+             y = resid)) +
+  geom_point(fill = "#625AD8", color = "#7339AB") +
+  geom_abline(slope = -0.0075206, intercept = -0.2534193, color = "red") +
+  labs(title = "Residual Plot After Transformation",
+       x = "Age (years)", y = "Residuals")
+graph + theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 20, hjust = 0))
+```
+
+The origin of this weird pattern is not hard to understand, which is that the **minimum value** of the net worth is one billion since our data set is called "billionaire". Therefore the minimum value is a **constant** number - "1.0", and since we are using a **linear** model to fit our data with, the **difference** between the prediction line $y = \beta_0 + \beta_1Age_i$ and our minimum value $y = 1$ forms a straight line with equation $y = 1 - (\beta_0 + \beta_1Age_i)$
+
+
+---
+## Model 2: Inheritance and Region
+
+```{r echo = FALSE, fig.align="center", fig.width=10, fig.height=5}
+inheritance <-
+  billionaires %>% 
+  mutate(inherited = case_when(
+    str_detect(wealth.how.inherited, "not") == 1 ~ "not inherited",
+    str_detect(wealth.how.inherited, "not") != 1 ~ "inherited"))
+
+inheritance %>% 
+  ggplot(aes(x = location.region,
+             fill = inherited)) +
+  geom_bar() +
+  coord_flip() +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9")) +
+  labs(title = "Bar Plot of Inheritance of Billionaires by Region",
+       x = "Region", y = "Number of Billionaires") +
+  theme(panel.background = element_rect(fill = '#d1efff')) +
+  theme(plot.title = element_text(color = "#015C92", size = 20, hjust = 0))
+
+```
++ Sub-Saharan Africa and East Asia have the least shares in inherited wealth  
++ Latin America & Middle East/North Africa have the most shares in the inherited wealth  
++ in Latin America we can see an exact balance between inherited and non inherited wealth
+
+---
+## Model 2: Non-Inherited Region-based Analysis (1)
+```{r echo=FALSE,fig.align='center', fig.width=12, fig.height=5}
+
+inheritance <-
+  billionaires %>% 
+  mutate(inherited = case_when(
+    str_detect(wealth.how.inherited, "not") == 1 ~ "not inherited",
+    str_detect(wealth.how.inherited, "not") != 1 ~ "inherited"))
+
+inheritance %>%
+  filter(inherited == "not inherited") %>%
+  ggplot(aes(x = location.region,
+             y = `wealth.worth in billions`)) +
+  geom_violin() +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 80, 10)) +
+  labs(title = "Non-Inherited Wealth By Region", 
+       x = "Region", y = "Net Worth In Billions (USD)") +
+  theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 20, hjust = 0))
+```
+.pull-left[
++ Min difference:
+  +  South Asia
+  + Middle-East/North Africa
+]
+.pull-right[
++ Max difference:
+  + North America
+  + Latin America
+  + Europe
+]
+
+---
+## Model 2: Non-Inherited Region-based Analysis (2)
+```{r echo=FALSE,fig.align='center',fig.width=10, fig.height=4}
+
+inheritance <-
+  billionaires %>% 
+  mutate(inherited = case_when(
+    str_detect(wealth.how.inherited, "not") == 1 ~ "not inherited",
+    str_detect(wealth.how.inherited, "not") != 1 ~ "inherited"))
+
+inheritance %>%
+  filter(inherited == "not inherited") %>%
+  ggplot(aes(x = location.region,
+             y = `wealth.worth in billions`)) +
+  geom_violin() +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 80, 10)) +
+  labs(title = "Non-Inherited Wealth By Region", 
+       x = "Region", y = "Net Worth In Billions (USD)") +
+  theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 20, hjust = 0))
+```
+
+.pull-left[
+
++ Majority of billionaires __In__ minimum range(new comers in major):
+  + South Asian
+  + Middle-East/North Africa
+  + Latin America
+  + East Asia
+]
+.pull-right[
++ Majority of billionaires __After__ minimum range(semi-matured in major):
+  + North America
+  + Europe
+]
+---
+## Model 2: Non-Inherited Region-based Analysis (3)
+```{r echo=FALSE,fig.align='center',fig.width=10, fig.height=4}
+
+inheritance <-
+  billionaires %>% 
+  mutate(inherited = case_when(
+    str_detect(wealth.how.inherited, "not") == 1 ~ "not inherited",
+    str_detect(wealth.how.inherited, "not") != 1 ~ "inherited"))
+
+inheritance %>%
+  filter(inherited == "not inherited") %>%
+  ggplot(aes(x = location.region,
+             y = `wealth.worth in billions`)) +
+  geom_violin() +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 80, 10)) +
+  labs(title = "Non-Inherited Wealth By Region", 
+       x = "Region", y = "Net Worth In Billions (USD)") +
+  theme(panel.background = element_rect(fill = '#ede6ff')) +
+  theme(plot.title = element_text(color = "#7339AB", size = 20, hjust = 0))
+```
+
+.pull-left[
+
++ Exponential (Natural) :
+  + South Asian
+  + Middle-East/North Africa
+  + Latin America
+  + East Asia
+]
+.pull-right[
++ Linear (non-Natural) :
+  + Sub-African
+]
+---
+## Model 2: Inherited Region-based Analysis
+
+```{r echo=FALSE,fig.width=10, fig.height=5}
+inheritance <-
+  billionaires %>% 
+  mutate(inherited = case_when(
+    str_detect(wealth.how.inherited, "not") == 1 ~ "not inherited",
+    str_detect(wealth.how.inherited, "not") != 1 ~ "inherited"))
+
+inheritance %>% 
+  filter(inherited == "inherited") %>% 
+  ggplot(aes(x = location.region,
+             y = `wealth.worth in billions`)) +
+  geom_violin() +
+  coord_flip() +
+  ylim(0, 80) +
+  labs(title = "Inherited Wealth By Region", 
+       x = "Region", y = "Net Worth in Billions (USD)") +
+  theme(panel.background = element_rect(fill = '#d1efff')) +
+  theme(plot.title = element_text(color = "#015C92", size = 20, hjust = 0))
+  
+```
+
++ Europe and North America’s newly inherited billionaires are doing the best job compared to other regions to increase their wealth and investments
+---
+
+## Model 2: Linear Regression
+
+```{r echo=FALSE}
+model_ri <- lm(`wealth.worth in billions` ~ location.region + inherited, data = inheritance)
+
+tidy(model_ri) %>% select(-c(statistic, std.error)) %>% 
+  knitr::kable(digits = 3)
+```
+
++ The null hypothesis is trying to say that area and inheritance doesn’t really affect wealth
++ Null hypothesis of 3 variables (1- Europe, 2-North America, 3- Inherited) is getting rejected p-value < 5e-2
+
+---
+## Conclusions
+
++ Older people tends to be more wealthy
++ Net worth could increases at an **exponential** rate
++ Being located in **North America** is significantly positively related to a billionaire's net worth 
++ Don't inherit your wealth otherwise you can't be extra rich
+
+
+
+

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Billionaires</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Aiden Sui, Aileen Tran, Roni Asatourian, Kenny Chen" />
+    <meta name="date" content="2021-06-08" />
+    <script src="libs/header-attrs-2.8/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Billionaires
+## 💸💸💸
+### Aiden Sui, Aileen Tran, Roni Asatourian, Kenny Chen
+### University of California Irvine
+### 06/08/2021
+
+---
+
+## Intro and Data
+
+
++ Our data: Multi-dimensional information of billionaires recorded in 2014
++ No. of Observations: 1653
++ No. of variables: 22
+
+
+|Name             | Net Worth (in billions)| Age|Inherited     |Region        |
+|:----------------|-----------------------:|---:|:-------------|:-------------|
+|Bill Gates       |                    76.0|  58|not inherited |North America |
+|Carlos Slim Helu |                    72.0|  74|not inherited |Latin America |
+|Amancio Ortega   |                    64.0|  77|not inherited |Europe        |
+|Warren Buffett   |                    58.2|  83|not inherited |North America |
+|Larry Ellison    |                    48.0|  69|not inherited |North America |
+|Charles Koch     |                    40.0|  78|father        |North America |
+|David Koch       |                    40.0|  73|father        |North America |
+|Sheldon Adelson  |                    38.0|  80|not inherited |North America |
+|Christy Walton   |                    36.7|  59|spouse/widow  |North America |
+|Jim Walton       |                    34.7|  66|father        |North America |
+
+---
+## Codebook (summarized)
+
+Variables we choose to focus on:
+
+| Variable | Type | Description |   
+|:---------|:----:|------------:| 
+|`wealth.worth in billions` | *double* | the billionaire's net worth (in billions of USD) |
+|`demographics.age` | *integer* | age of the billionaire (if applicable) |
+|`wealth.how.inherited` | *factor* | was the wealth inherited and from whom |
+|`location.region`| *factor* | where the billionaire lives |
+
+---
+## Investigation (questions)
+Our primary variable of interest is net worth(`wealth.worth in billions`).  
+
+Other variables we will be using to understand the response variable: 
++ age (`demographics.age`)
++ region (`location.region`)
++ inheritance (`wealth.how.inherited`)
+
+
+This dataset includes observations take in 1996, 2001, and 2014. It makes sense to take values that are most recent, so we will be focusing only on observations from the year __2014__. 
+
+Keep in mind that this is all the data on every billionaire, so it is actually the __population__ of the billionaires, not a sample.
+
+---
+## Preliminary Visuals
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-3-1.png" title="A horizontal bar graph with the region as the Y-axis and the number of billionaires on the X-axis. The most billionaires are in North America, Europe, and East Asia, while Sub-Saharan Africa. The Middle East/North Africa, South Asia, and Latin America have considerably fewer billionaires." alt="A horizontal bar graph with the region as the Y-axis and the number of billionaires on the X-axis. The most billionaires are in North America, Europe, and East Asia, while Sub-Saharan Africa. The Middle East/North Africa, South Asia, and Latin America have considerably fewer billionaires." style="display: block; margin: auto;" /&gt;
+
+---
+## Preliminary Visuals
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-4-1.png" title="A histogram with age on the x-axis and the number of billionaires on the y-axis. It is a fairly normal distribution with the mean at around 60 years of age, with a range of 24 to 98." alt="A histogram with age on the x-axis and the number of billionaires on the y-axis. It is a fairly normal distribution with the mean at around 60 years of age, with a range of 24 to 98." style="display: block; margin: auto;" /&gt;
+
+---
+## Preliminary Visuals
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-5-1.png" title="A scatter plot with age on the x-axis and net worth on the y-axis. There are multiple extremely wealthy billionaires for all age groups, but the bulk of billionaires are not worth more than 10 million dollars USD." alt="A scatter plot with age on the x-axis and net worth on the y-axis. There are multiple extremely wealthy billionaires for all age groups, but the bulk of billionaires are not worth more than 10 million dollars USD." style="display: block; margin: auto;" /&gt;
+
+---
+## Preliminary Visuals
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-6-1.png" title="A horizontal violin plot with the region on the y axis and age on the x axis. The distributions are mostly normal in each region, with the bulk of billionaires from the ages of 40 to 80 years." alt="A horizontal violin plot with the region on the y axis and age on the x axis. The distributions are mostly normal in each region, with the bulk of billionaires from the ages of 40 to 80 years." style="display: block; margin: auto;" /&gt;
+
+---
+
+## Model 1: Formula 
+
+The first covariate we choose to put into the model is age, as intuitively a person's wealth would have some relation with his or her age.
+
+
+
+We fit the linear regression model with the following formula:
+`$$Net Worth_i=\beta_0+\beta_1Age_i$$`
+
+---
+## Model 1: Hypothesis Test
+Model summary:
+
+
+|term             | estimate| std.error| statistic| p.value|
+|:----------------|--------:|---------:|---------:|-------:|
+|(Intercept)      |    2.045|     0.505|     4.049|       0|
+|demographics.age |    0.031|     0.008|     3.836|       0|
+
+The small p-value (&lt;0.05) indicates that we have significant evidence that there is a relation between age and net worth.
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-9-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+## Model 1: Redisual Analysis
+
+However, the scatter of the residuals shows a downward going tread that significantly deviates from a horizontal line at y = 0. This means that the residuals might be dependent with age.
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+Therefore, we consider to transform the data to obtain a better fit.
+---
+## Model 1: Transformed Formula
+
+By transforming Net Worth to **log(Net Worth)**, we take into consideration the fact that the wealthier a person currently is, the easier he or she might be to make more money. The new model is as the following: `$$\log(NetWorth_i)=\beta_0+\beta_1Age_i$$`
+
+
+|term             | estimate| std.error| statistic| p.value|
+|:----------------|--------:|---------:|---------:|-------:|
+|(Intercept)      |    1.223|     0.112|    10.915|       0|
+|demographics.age |    0.009|     0.002|     4.927|       0|
+
+The new regression model we get still yields a extremely small p-value, implying that the trend is **significant**.
+---
+## Model 1: Plot &amp; Regression Line
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-12-1.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+---
+## Model 1: Redisual Analysis
+
+Now plotting the residual again:
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-13-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+We can clearly see that the average trend becomes more **horizontal** and **centered at y = 0**, and the residual is no longer dependent on age.
+
+---
+## Model 1: Important Note
+
+However, another noticeable pattern is the shape edge at the bottom of the scatter plot, marked with a red line:
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-14-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+The origin of this weird pattern is not hard to understand, which is that the **minimum value** of the net worth is one billion since our data set is called "billionaire". Therefore the minimum value is a **constant** number - "1.0", and since we are using a **linear** model to fit our data with, the **difference** between the prediction line `\(y = \beta_0 + \beta_1Age_i\)` and our minimum value `\(y = 1\)` forms a straight line with equation `\(y = 1 - (\beta_0 + \beta_1Age_i)\)`
+
+
+---
+## Model 2: Inheritance and Region
+
+&lt;img src="presentation_files/figure-html/unnamed-chunk-15-1.png" style="display: block; margin: auto;" /&gt;
++ Sub-Saharan Africa and East Asia have the least shares in inherited wealth  
++ Latin America &amp; Middle East/North Africa have the most shares in the inherited wealth  
++ in Latin America we can see an exact balance between inherited and non inherited wealth
+
+---
+## Model 2: Non-Inherited Region-based Analysis (1)
+&lt;img src="presentation_files/figure-html/unnamed-chunk-16-1.png" style="display: block; margin: auto;" /&gt;
+.pull-left[
++ Min difference:
+  +  South Asia
+  + Middle-East/North Africa
+]
+.pull-right[
++ Max difference:
+  + North America
+  + Latin America
+  + Europe
+]
+
+---
+## Model 2: Non-Inherited Region-based Analysis (2)
+&lt;img src="presentation_files/figure-html/unnamed-chunk-17-1.png" style="display: block; margin: auto;" /&gt;
+
+.pull-left[
+
++ Majority of billionaires __In__ minimum range(new comers in major):
+  + South Asian
+  + Middle-East/North Africa
+  + Latin America
+  + East Asia
+]
+.pull-right[
++ Majority of billionaires __After__ minimum range(semi-matured in major):
+  + North America
+  + Europe
+]
+---
+## Model 2: Non-Inherited Region-based Analysis (3)
+&lt;img src="presentation_files/figure-html/unnamed-chunk-18-1.png" style="display: block; margin: auto;" /&gt;
+
+.pull-left[
+
++ Exponential (Natural) :
+  + South Asian
+  + Middle-East/North Africa
+  + Latin America
+  + East Asia
+]
+.pull-right[
++ Linear (non-Natural) :
+  + Sub-African
+]
+---
+## Model 2: Inherited Region-based Analysis
+
+![](presentation_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
+
++ Europe and North America’s newly inherited billionaires are doing the best job compared to other regions to increase their wealth and investments
+---
+
+## Model 2: Linear Regression
+
+
+|term                                    | estimate| p.value|
+|:---------------------------------------|--------:|-------:|
+|(Intercept)                             |    3.543|   0.000|
+|location.regionEurope                   |    1.029|   0.012|
+|location.regionLatin America            |    0.645|   0.302|
+|location.regionMiddle East/North Africa |   -0.536|   0.457|
+|location.regionNorth America            |    1.425|   0.000|
+|location.regionSouth Asia               |    0.169|   0.830|
+|location.regionSub-Saharan Africa       |    1.248|   0.393|
+|inheritednot inherited                  |   -0.651|   0.037|
+
++ The null hypothesis is trying to say that area and inheritance doesn’t really affect wealth
++ Null hypothesis of 3 variables (1- Europe, 2-North America, 3- Inherited) is getting rejected p-value &lt; 5e-2
+
+---
+## Conclusions
+
++ Older people tends to be more wealthy
++ Net worth could increases at an **exponential** rate
++ Being located in **North America** is significantly positively related to a billionaire's net worth 
++ Don't inherit your wealth otherwise you can't be extra rich
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

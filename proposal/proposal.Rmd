@@ -1,0 +1,96 @@
+---
+title: "proposal"
+author: "Aiden Sui, Aileen Tran, Kenny Chen, Roni Asatourian"
+date: "5/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+data <- read_csv(here::here("data/billionaires.csv"))
+```
+### Introduction
+This is a database of Billionaires built off of Forbes World’s Billionaires list from 1996-2014. Each billionaire is listed up to three times, one for each year the data was collected.  We are interested in seeing how a billionaire’s net worth is affected by multiple variables.
+
+#### Questions 
+What region contains the most billionaires? (variable: location.region)  
+- This question interests us because we want to know if there is any significance of region when it comes to billionaires.  
+What sector makes the most billionaires? (variable: company.sector)  
+- This question interests us because we want to know if the sector a billionaire works in translates to their net worth.  
+What is the age distribution of the billionaires? (variable: demographics.age)  
+- This question interests us because we want to know if age plays a role in becoming a billionaire.  
+How is the amount of billionaires of a country related to its GDP? (variable: location.gdp)  
+- This could give insight into whether the “economic health” of a country has an influence on the number of billionaires from that country.  
+	What proportion of the billionaires inherited their wealth, by their net worth? (variable: wealth.how.inherited)  
+- We want to see whether most billionaires inherit their wealth or are self made.
+
+### Data
+```{r}
+glimpse(data)
+```
+
+
+### Data Analysis Plan
+Our primary variable of interest is net worth(wealth.worth in billions).  
+Other variables we will be using to understand the response variable are age(demographics.age), region(location,region), year(year), and sector(company.sector).  
+
+#### Preliminary Analysis
+```{r}
+data %>% 
+  filter(year == 2014) %>% 
+  ggplot(aes(x = location.region)) +
+  geom_bar() +
+  labs(title = "Number of Billionaires by Region",
+       x = "Region", y = "Number of Billionaires") + 
+  coord_flip()
+
+data %>% 
+  filter(year == 2014, demographics.age > 0) %>%  
+  ggplot(aes(x = demographics.age)) +
+  geom_histogram(binwidth = 10) +
+  labs(title = "Histogram of Number Of Billionares by Age",
+       x = "Age", y = "Number of Billionaires")
+data %>% 
+  filter(year == 2014, demographics.age > 0) %>%  
+  ggplot(aes(x = demographics.age,
+             y = `wealth.worth in billions`)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Age Against Net Worth",
+       x = "Age", y = "Net Worth (In Billions)")
+  
+data %>%
+  filter(year == 2014, demographics.age > 0) %>%  
+  ggplot(aes(x = location.region,
+             y = demographics.age))  +
+  geom_violin() +
+  labs(title = "Violin Plot of Billionares' Age by Region",
+       x = "Region", y = "Age") + 
+  coord_flip()
+
+data %>%
+  filter(location.gdp > 0) %>%  
+  group_by(`location.country code`) %>%
+  summarise(n = n(),
+            net_wealth = sum(`wealth.worth in billions`),
+            gdp = sum(location.gdp)/n) %>%
+  ggplot(aes(x = gdp,
+             y = net_wealth)) + 
+  geom_point() + 
+  scale_x_log10() + 
+  scale_y_log10() +
+  labs(title = "Net Wealth of Billionares by Country vs Country GDP",
+       x = "Country GDP", y = "Net Worth (In Billions)")
+
+data %>%
+  filter(year == 2014, demographics.age > 0) %>% 
+  ggplot(aes(x = demographics.gender,
+           y = `wealth.worth in billions`)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  labs(title = "Boxplot of Net Wealth by Gender",
+       x = "Gender", y = "Net Worth (In Billions)")
+  
+```
+
+
